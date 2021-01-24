@@ -9,13 +9,20 @@ export class Component<P=PropsWithChildren & any> {
   __observe__!: Array<symbol | string>;
   constructor() {
     this.$props = {} as any;
-    this.__observe__.forEach(key => {
-      observer(this, key, (this as any)[key]);
+    Promise.resolve().then(() => {
+      this.__observe__.forEach(key => {
+        observer(this, key, (this as any)[key]);
+      });
+    }).then(() => {
+      if (typeof this.created === 'function') {
+        this.created();
+      }
     });
   }
   render(): VNode {
     throw new Error(`The render function must be defined in ${this.constructor.name}`);
   };
+  created?(): any;
 }
 Component.prototype.__observe__ = [];
 export interface ComponentConstructor {
@@ -30,7 +37,7 @@ function observer<T>(target: T, key: string | symbol, initialValue: any) {
     },
     set(val) {
       value = val;
-    }
+    },
   });
 }
 
