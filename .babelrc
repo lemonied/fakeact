@@ -1,0 +1,31 @@
+{
+  "presets": [
+    [
+      "@babel/preset-typescript",
+      {
+        "jsxPragma": "h",
+        "jsxPragmaFrag": "h.Fragment"
+      }
+    ],
+    [
+      "@babel/preset-env",
+      {
+        "useBuiltIns": "entry",
+        "corejs": "3.8"
+      }
+    ],
+    [
+      "@babel/preset-react",
+      {
+        "pragma": "h",
+        "pragmaFrag": "h.Fragment",
+        "throwIfNamespace": false,
+        "runtime": "classic"
+      }
+    ]
+  ],
+  "plugins": [
+    ["@babel/plugin-proposal-decorators", { "legacy": true }],
+    ["@babel/plugin-proposal-class-properties", { "loose" : true }]
+  ]
+}
