@@ -1,9 +1,17 @@
-import { h, render } from '../lib';
-import { Component } from '../lib/component';
-import { Observe } from '../lib/component';
+import { h, render, Component, Observe } from '../lib';
+
+class Children extends Component {
+  @Observe name = 'ChenJiYuan';
+  render() {
+    return (
+      <p>{ this.name }</p>
+    );
+  }
+}
 
 class App extends Component {
   @Observe count = 'onClick';
+  @Observe test = 'test';
   onClick() {
     console.log(this.count);
   }
@@ -12,10 +20,12 @@ class App extends Component {
       <div>
         <span title={234} onClick={this.onClick}>{this.count}</span>
         <span />
+        <Children count={this.count} />
       </div>
     );
   }
 }
 
-console.log(<App />);
-render(<App />, document.getElementById('root'));
+render(<App />, document.getElementById('root')).then((vNodes) => {
+  console.log(vNodes);
+});
