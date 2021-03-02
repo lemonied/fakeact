@@ -1,24 +1,16 @@
-import { Component } from './component';
+import { ComponentConstructor } from './component';
 
-interface Attrs {
-  [attr: string]: any;
-}
-export type Attributes = null | Attrs;
-export type DioElement = string | number | undefined | null | VNode | Component;
+export type NodeName = string | ComponentConstructor;
+export type Attributes = { [prop: string]: any } | null;
+export type Children = any[] | null;
 
 export class VNode {
-  name: string;
-  attrs: Attributes;
-  children: DioElement[] | null = null;
-  htmlElement!: HTMLElement;
-  component!: Component;
-  constructor(node: string, attrs: Attributes, children: DioElement[] | null) {
-    this.name = node;
-    this.attrs = attrs;
+  nodeName: NodeName;
+  attributes: Attributes;
+  children: Children;
+  constructor(nodeName: NodeName, attributes: Attributes, children: Children) {
+    this.nodeName = nodeName;
+    this.attributes = attributes;
     this.children = children;
   }
-}
-
-export function isVNode(val: any): val is VNode {
-  return val instanceof VNode;
 }

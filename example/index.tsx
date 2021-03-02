@@ -1,19 +1,45 @@
 import { h, render, Component, Observe } from '../lib';
 
 class Children extends Component {
-  @Observe name = 'ChenJiYuan';
+  name = 'ChenJiYuan';
   render() {
     return (
-      <p>{ this.name }</p>
+      <div>
+        <p>{ this.props.count }</p>
+        <p>{ this.name }</p>
+      </div>
+    );
+  }
+}
+
+class Input extends Component {
+  @Observe value = '';
+  onChange(e: InputEvent) {
+    this.value = (e.target as any).value;
+  }
+  render() {
+    return (
+      <div>
+        <input type="text" onInput={this.onChange}/>
+        <p>{ this.value }</p>
+      </div>
+    );
+  }
+}
+class Input2 extends Component {
+  render() {
+    return (
+      <Input />
     );
   }
 }
 
 class App extends Component {
-  @Observe count = 'onClick';
-  @Observe test = 'test';
+  count = 123;
+  test = 'test';
   onClick() {
-    console.log(this.count);
+    console.log(this);
+    this.count++;
   }
   render() {
     return (
@@ -21,11 +47,10 @@ class App extends Component {
         <span title={234} onClick={this.onClick}>{this.count}</span>
         <span />
         <Children count={this.count} />
+        <Input2 />
       </div>
     );
   }
 }
 
-render(<App />, document.getElementById('root')).then((vNodes) => {
-  console.log(vNodes);
-});
+render(<App />, document.getElementById('root')!);
