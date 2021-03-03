@@ -1,42 +1,30 @@
 import { h, render, Component, Observe } from '../lib';
 
-class Children extends Component {
-  name = 'ChenJiYuan';
-  render() {
-    return (
-      <div>
-        <p>{ this.props.count }</p>
-        <p>{ this.name }</p>
-      </div>
-    );
-  }
-}
-
-class Input extends Component {
+class Input extends Component<{ initialValue: string }> {
   @Observe value = '';
-  onChange(e: InputEvent) {
-    this.value = (e.target as any).value;
+  onInput(e: any) {
+    this.value = e.target.value;
   }
+  created() {
+    this.value = this.props.initialValue;
+  }
+  beforeDestroy() {
+    console.log('beforeDestroy');
+  }
+
   render() {
     return (
       <div>
-        <input type="text" onInput={this.onChange}/>
-        <p>{ this.value }</p>
+        <input type="text" onInput={this.onInput}/>
+        <p>value： { this.value }</p>
       </div>
-    );
-  }
-}
-class Input2 extends Component {
-  render() {
-    return (
-      <Input />
     );
   }
 }
 
 class App extends Component {
-  count = 123;
-  test = 'test';
+  @Observe count = 1;
+  @Observe toggleShowInput = true;
   onClick() {
     console.log(this);
     this.count++;
@@ -44,10 +32,19 @@ class App extends Component {
   render() {
     return (
       <div>
-        <span title={234} onClick={this.onClick}>{this.count}</span>
-        <span />
-        <Children count={this.count} />
-        <Input2 />
+        <div>
+          <span>计数：</span>
+          <span title={this.count}>{this.count}</span>
+          &nbsp;&nbsp;&nbsp;
+          <button onClick={this.onClick}>+1</button>
+        </div>
+        <br/>
+        {
+          this.toggleShowInput ?
+            <Input initialValue={'init'} /> :
+            null
+        }
+        <button onClick={() => this.toggleShowInput = !this.toggleShowInput}>显示/隐藏input</button>
       </div>
     );
   }

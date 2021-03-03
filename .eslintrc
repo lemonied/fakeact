@@ -5,6 +5,7 @@
     "browser": true,
     "node": true
   },
+  "ignorePatterns": ["lib", "dist"],
   "extends": [
     "eslint:recommended"
   ],

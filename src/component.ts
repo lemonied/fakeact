@@ -1,4 +1,4 @@
-import { VNode } from './vNode';
+import { Children, VNode } from './vNode';
 
 const data = Symbol('data');
 const init = Symbol('init');
@@ -8,23 +8,21 @@ const DOM_LISTENERS = '_listeners';
 export const nextProps = Symbol('nextProps');
 export const componentBase = Symbol('base');
 
-interface Props {
-  [prop: string]: any;
-}
+type PropsWithChildren<P> = P & { children?: Children };
 
 export interface ComponentConstructor {
   new (): Component;
 }
 
-export class Component<P=Props> {
-  [nextProps]: P | Props = {};
+export class Component<P=any> {
+  [nextProps]: PropsWithChildren<P> = {} as any;
   [componentBase]: Node | null = null;
-  [data]!: Array<string | symbol>;
-  props: P | Props = {};
+  [data]?: Array<string | symbol>;
+  props: PropsWithChildren<P> = {} as any;
   [init]() {
     (this[data] || []).forEach(key => observer(this, key, (this as any)[key]));
   }
-  render(): VNode {
+  render(): VNode | string | number | null | undefined {
     throw new Error(`The render function must be defined in ${this.constructor.name}`);
   }
   // eslint-disable-next-line no-unused-vars
@@ -32,8 +30,11 @@ export class Component<P=Props> {
     // Called when data changed
   }
   // eslint-disable-next-line no-unused-vars
-  onPropsChange(nextProps: Props, preProps: Props) {
+  onPropsChange(nextProps: PropsWithChildren<P>, preProps: PropsWithChildren<P>) {
     // Called when Props changes
+  }
+  updated() {
+    // Called after update
   }
   mounted() {
     // Called when document is ready
@@ -41,9 +42,15 @@ export class Component<P=Props> {
   created() {
     // Called when Component is created
   }
+  beforeDestroy() {
+    // Called before destroy
+  }
 }
 
-export function build(vNode: VNode | string | number, dom?: Node | null): Node {
+export function build(vNode: VNode | string | number | undefined | null, dom?: Node | HTMLElement | null): Node {
+  if (vNode === null || typeof vNode === 'undefined') {
+    vNode = '';
+  }
   if (typeof vNode === 'string' || typeof vNode === 'number') {
     if (dom) {
       if (dom.nodeType === 3) {
@@ -62,7 +69,7 @@ export function build(vNode: VNode | string | number, dom?: Node | null): Node {
 
   let out = dom;
   if (typeof nodeName === 'string') {
-    if (!out) {
+    if (!out || out.nodeType !== 1 || out.nodeName !== nodeName.toUpperCase()) {
       out = document.createElement(nodeName);
     }
     if (attributes) {
@@ -89,6 +96,17 @@ export function build(vNode: VNode | string | number, dom?: Node | null): Node {
         insertTo(out as HTMLElement, newChild, i);
       }
     });
+    children.forEach(v => {
+      if (!newChildren.includes(v)) {
+        const domComponents = (v as any)[DOM_COMPONENT];
+        if (domComponents) {
+          domComponents.forEach((c: Component) => {
+            c.beforeDestroy();
+          });
+        }
+        out?.removeChild(v);
+      }
+    });
   }
   return out as Node;
 }
@@ -97,7 +115,7 @@ export function Observe(target: Component, key: string | symbol) {
   if (!target[data]) {
     target[data] = [];
   }
-  target[data].push(key);
+  target[data]!.push(key);
 }
 
 function observer(target: Component, key: string | symbol, initialValue: any) {
@@ -110,7 +128,7 @@ function observer(target: Component, key: string | symbol, initialValue: any) {
       const oldVal = value;
       value = val;
       if (oldVal !== val) {
-        target.onDataChange(key, value, oldVal);
+        hook(target, 'onDataChange', key, value, oldVal);
         renderComponent(target);
       }
     },
@@ -123,26 +141,38 @@ function renderComponent(component: Component): Node {
     if (isPropsDifferent(p, component.props)) {
       hook(component, 'onPropsChange', p, component.props);
     }
+    component.props = p;
   } else {
+    component.props = p;
     hook(component, 'created');
     component[init]();
   }
-  component.props = p;
   const rendered = hook(component, 'render');
   const base = build.call(component, rendered, component[componentBase]);
   if (!component[componentBase]) {
     Promise.resolve().then(() => {
       hook(component, 'mounted');
     });
+  } else {
+    hook(component, 'updated');
   }
   if (base) {
     component[componentBase] = base;
-    (component[componentBase] as any)[DOM_COMPONENT] = component;
+    if (!(base as any)[DOM_COMPONENT]) {
+      (base as any)[DOM_COMPONENT] = [];
+    }
+    const components: Component[] = (base as any)[DOM_COMPONENT];
+    const index = components.findIndex(v => v.constructor === component.constructor);
+    if (index > -1) {
+      components.splice(index, 1, component);
+    } else {
+      components.push(component);
+    }
   }
   return base;
 }
 
-function isPropsDifferent(newProps: Props, oldProps: Props) {
+function isPropsDifferent(newProps: PropsWithChildren<any>, oldProps: PropsWithChildren<any>) {
   return Object.keys(newProps).some(key => {
     return newProps[key] !== oldProps[key];
   });
@@ -156,18 +186,26 @@ function hook(component: Component, key: keyof Component, ...args: any[]): any {
 }
 
 function buildComponentFromVNode(vNode: VNode, dom?: Node | null) {
-  const component: Component = dom && (dom as any)[DOM_COMPONENT] || new (vNode.nodeName as ComponentConstructor)();
+  const domComponent = dom && (dom as any)[DOM_COMPONENT];
+  let component: Component;
+  if (domComponent) {
+    component = domComponent.find((v: any) => v.constructor === vNode.nodeName);
+  }
+  // @ts-ignore
+  if (!component) {
+    component = new (vNode.nodeName as ComponentConstructor)();
+  }
   const props = getNodeProps(vNode);
   setComponentProps(component, props);
   return renderComponent(component);
 }
 
-function setComponentProps(component: Component, props: Props) {
+function setComponentProps(component: Component, props: PropsWithChildren<any>) {
   component[nextProps] = props;
 }
 
 function getNodeProps(vNode: VNode) {
-  return { ...vNode.attributes };
+  return { ...vNode.attributes, children: vNode.children };
 }
 
 function setAttribute(node: HTMLElement, attr: string, value: any, context?: any) {
