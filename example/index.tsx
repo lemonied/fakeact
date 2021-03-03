@@ -1,34 +1,29 @@
 import { h, render, Component, Observe } from '../lib';
-
-class Input extends Component<{ initialValue: string }> {
-  @Observe value = '';
-  onInput(e: any) {
-    this.value = e.target.value;
-  }
-  created() {
-    this.value = this.props.initialValue;
-  }
-  beforeDestroy() {
-    console.log('beforeDestroy');
-  }
-
-  render() {
-    return (
-      <div>
-        <input type="text" onInput={this.onInput}/>
-        <p>value： { this.value }</p>
-      </div>
-    );
-  }
-}
+import { Input } from './input';
 
 class App extends Component {
   @Observe count = 1;
   @Observe toggleShowInput = true;
+  @Observe inputInitialValue = 'init';
   onClick() {
-    console.log(this);
     this.count++;
   }
+  updated() {
+    console.log('App updated');
+  }
+  onDataChange(key: string | symbol, newData: any, oldData: any) {
+    console.log('App onDataChange', key, newData, oldData);
+  }
+  created() {
+    console.log('App created');
+  }
+  mounted() {
+    console.log('App mounted');
+  }
+  onInput(e: any) {
+    this.inputInitialValue = e.target.value;
+  }
+
   render() {
     return (
       <div>
@@ -39,12 +34,18 @@ class App extends Component {
           <button onClick={this.onClick}>+1</button>
         </div>
         <br/>
+        <div>
+          <span>initialValue：</span>
+          <input type="text" onInput={this.onInput} />
+        </div>
         {
           this.toggleShowInput ?
-            <Input initialValue={'init'} /> :
+            <Input initialValue={this.inputInitialValue} /> :
             null
         }
-        <button onClick={() => this.toggleShowInput = !this.toggleShowInput}>显示/隐藏input</button>
+        <button
+          onClick={() => this.toggleShowInput = !this.toggleShowInput}
+        >{ this.toggleShowInput ? '隐藏' : '显示' } Input组件</button>
       </div>
     );
   }

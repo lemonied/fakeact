@@ -8,17 +8,17 @@ const DOM_LISTENERS = '_listeners';
 export const nextProps = Symbol('nextProps');
 export const componentBase = Symbol('base');
 
-type PropsWithChildren<P> = P & { children?: Children };
+export type PropsWithChildren<P> = P & { children?: Children };
 
 export interface ComponentConstructor {
   new (): Component;
 }
 
 export class Component<P=any> {
-  [nextProps]: PropsWithChildren<P> = {} as any;
+  [nextProps]: PropsWithChildren<P> = { children: null } as PropsWithChildren<P>;
   [componentBase]: Node | null = null;
   [data]?: Array<string | symbol>;
-  props: PropsWithChildren<P> = {} as any;
+  props: PropsWithChildren<P> = { children: null } as PropsWithChildren<P>;
   [init]() {
     (this[data] || []).forEach(key => observer(this, key, (this as any)[key]));
   }
@@ -173,7 +173,11 @@ function renderComponent(component: Component): Node {
 }
 
 function isPropsDifferent(newProps: PropsWithChildren<any>, oldProps: PropsWithChildren<any>) {
-  return Object.keys(newProps).some(key => {
+  const newKeys = Object.keys(newProps);
+  if (newKeys.length !== Object.keys(oldProps).length) {
+    return true;
+  }
+  return newKeys.some(key => {
     return newProps[key] !== oldProps[key];
   });
 }
@@ -181,15 +185,15 @@ function isPropsDifferent(newProps: PropsWithChildren<any>, oldProps: PropsWithC
 function hook(component: Component, key: keyof Component, ...args: any[]): any {
   const fn = component[key];
   if (typeof fn === 'function') {
-    return (fn as any).apply(component, args);
+    return (fn as Function).apply(component, args);
   }
 }
 
 function buildComponentFromVNode(vNode: VNode, dom?: Node | null) {
-  const domComponent = dom && (dom as any)[DOM_COMPONENT];
+  const domComponent: Component[] = dom && (dom as any)[DOM_COMPONENT];
   let component: Component;
   if (domComponent) {
-    component = domComponent.find((v: any) => v.constructor === vNode.nodeName);
+    component = domComponent.find((v) => v.constructor === vNode.nodeName)!;
   }
   // @ts-ignore
   if (!component) {
@@ -223,6 +227,16 @@ function setAttribute(node: HTMLElement, attr: string, value: any, context?: any
       node.addEventListener(eventType, newValue);
     }
     originListeners[eventType] = value;
+  } else if (attr === 'style') {
+    Object.keys(value as CSSStyleDeclaration).forEach((key) => {
+      (node.style as any)[key] = value[key];
+    });
+  } else if (attr === 'ref') {
+    if (typeof value === 'function') {
+      value.bind(context)(node);
+    } else {
+      throw new Error('ref must be function');
+    }
   } else {
     node.setAttribute(attr, value);
   }

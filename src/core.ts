@@ -6,10 +6,11 @@ export function h(nodeName: NodeName, attributes: Attributes, ...args: any[]): V
   return new VNode(nodeName, attributes, children);
 }
 
+// TODO
 export class Fragment extends Component {
   render() {
     const children = this.props.children || null;
-    return new VNode('div', null, children);
+    return h('div', null, ...children);
   }
 }
 
