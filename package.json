@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "server": "node webpack.dev.js",
+    "build": "node webpack.prod.js",
     "lib-dev": "tsc -w",
     "lib": "npm run lint && node build.js",
     "lint": "eslint \"src/**\""

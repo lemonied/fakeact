@@ -3,7 +3,7 @@ import { Children, VNode } from './vNode';
 const data = Symbol('data');
 const init = Symbol('init');
 const DOM_COMPONENT = '_component';
-const DOM_ORIGIN_LISTENERS = '_origin_listeners';
+const DOM_ORIGIN_LISTENERS = '_original_listeners';
 const DOM_LISTENERS = '_listeners';
 export const nextProps = Symbol('nextProps');
 export const componentBase = Symbol('base');
@@ -233,9 +233,9 @@ function setAttribute(node: HTMLElement, attr: string, value: any, context?: any
     });
   } else if (attr === 'ref') {
     if (typeof value === 'function') {
-      value.bind(context)(node);
+      value.call(context, node);
     } else {
-      throw new Error('ref must be function');
+      throw new Error('ref must be a function');
     }
   } else {
     node.setAttribute(attr, value);
