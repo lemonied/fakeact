@@ -35,7 +35,7 @@
     }],
     "comma-spacing": ["error", { "before": false, "after": true }],
     "prefer-const": "error",
-    "no-unused-vars": ["error", {
+    "no-unused-vars": ["warn", {
       "varsIgnorePattern": "^h$"
     }]
   }

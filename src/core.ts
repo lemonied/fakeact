@@ -1,17 +1,10 @@
-import { VNode, NodeName, Attributes } from './vNode';
-import { Component } from './component';
+import { NodeName, VNode, createVNode } from './vNode';
+import { Attributes } from './attribute';
+import { Fragment } from './fragment';
 
 export function h(nodeName: NodeName, attributes: Attributes, ...args: any[]): VNode {
-  const children = args.length ? [].concat(...args) : null;
-  return new VNode(nodeName, attributes, children);
-}
-
-// TODO
-export class Fragment extends Component {
-  render() {
-    const children = this.props.children || null;
-    return h('div', null, ...children);
-  }
+  const children = args.length ? [...args] : null;
+  return createVNode(nodeName, attributes, children);
 }
 
 h.Fragment = Fragment;
