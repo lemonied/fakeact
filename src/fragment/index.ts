@@ -1,13 +1,20 @@
-import { VNode } from '../vNode';
+import { VNode, FragmentVNode } from '../vNode';
 
 export const FragmentType = Symbol('Fragment');
 
-export const Fragment = () => {
-  return new VNode('fragment');
+export interface FragmentFunction {
+  (): FragmentVNode;
+  [FragmentType]?: true;
+}
+
+export const Fragment: FragmentFunction = () => {
+  const fragment = new VNode() as FragmentVNode;
+  fragment.type = 'fragment';
+  return fragment;
 };
 
-(Fragment as any)[FragmentType] = true;
+Fragment[FragmentType] = true;
 
-export function isFragment(val: any): val is typeof Fragment {
+export function isFragment(val: any): val is FragmentFunction {
   return !!val?.[FragmentType];
 }

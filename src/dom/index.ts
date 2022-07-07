@@ -1,2 +1,3 @@
-export * from './domTree';
+export * from './dom';
 export * from './render';
+

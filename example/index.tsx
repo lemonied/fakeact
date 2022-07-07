@@ -1,6 +1,9 @@
 import { h, createRoot, Component } from '../lib';
 
-class App extends Component {
+interface AppProps {
+  name: string;
+}
+class App extends Component<AppProps> {
 
   render() {
     return (
@@ -14,6 +17,9 @@ class App extends Component {
           <div>
             <p>789</p>
           </div>
+          <p>
+            name: {this.props.name}
+          </p>
         </div>
         <p>你好</p>
       </>
@@ -24,5 +30,11 @@ class App extends Component {
 const root = createRoot(document.getElementById('root')!);
 
 root.render(
-  <App />
+  <App name={'ChenJiYuan'} />
 );
+
+setTimeout(() => {
+  root.render(
+    <App name={'YuanLinLin'} />
+  );
+}, 2000);

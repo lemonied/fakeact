@@ -13,7 +13,7 @@ const app = express();
 app.use(
   middleware(compiler, {
     // webpack-dev-middleware options
-  })
+  }),
 );
 
 // eslint-disable-next-line no-console
