@@ -10,12 +10,12 @@ export class Root {
     this.ele = ele;
   }
   render(vNode: VNodeType) {
+    const tree = buildVNode(vNode);
     if (!this.domNode) {
-      const tree = buildVNode(vNode);
       this.domNode = buildDomNode(tree, this.ele);
     } else {
-      const diff = new Diff(this.domNode, vNode);
-      this.domNode = diff.process(this.domNode, vNode, rerender);
+      const diff = new Diff(this.domNode, tree);
+      this.domNode = diff.process();
     }
   }
 }

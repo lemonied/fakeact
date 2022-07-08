@@ -1,84 +1,72 @@
 import {
-  rebuildVNode,
   VNodeType,
 } from '../vNode';
 import { Attributes } from '../attribute';
 
-interface ReplaceOrUpdate<T extends VNodeType> {
-  type: 'update' | 'replace';
+export interface Difference<T extends VNodeType> {
+  type: 'remove' | 'update' | 'add';
   vDom: T;
-  vNode: VNodeType;
 }
-
-interface Add {
-  type: 'add';
-  vNode: VNodeType;
-}
-
-interface Remove<T extends VNodeType> {
-  type: 'remove';
-  vDom: T
-}
-
-export type Difference<T extends VNodeType> = ReplaceOrUpdate<T> | Add | Remove<T>;
 
 export class Diff<T extends VNodeType> {
-  private vDom: T;
-  private vNode: VNodeType;
-  public chains: T[] = [];
+  private readonly vDom: T;
+  private readonly vNode: VNodeType;
+  private results: Difference<T>[] = [];
   constructor(vDom: T, vNode: VNodeType) {
     this.vDom = vDom;
     this.vNode = vNode;
   }
-  public getVDom() {
-    return this.chains[this.chains.length - 1];
-  }
-  public process(vDom: T, vNode: VNodeType, callback: (difference: Difference<T>) => T): T {
-    this.chains.push(vDom);
-    if (vDom.type === 'component' && vNode.type === 'component') {
-      if (vDom.Component === vNode.Component) {
-        rebuildVNode(vDom, vNode);
-      }
-    } else if (vDom.type === 'text' && vNode.type === 'text') {
-      callback({
-        type: 'update',
-        vDom,
-        vNode,
-      });
-    } else if (vDom.type === 'element' && vNode.type === 'element') {
-      if (vDom.tagName !== vNode.tagName) {
-        callback({
-          type: 'replace',
-          vDom,
-          vNode,
-        });
-      }
+  private execChildren(oldChildren: T[] | null, newChildren: VNodeType[] | null) {
+    if (oldChildren && newChildren) {
+      let newEndIdx = newChildren.length - 1;
     }
-    if ('children' in vNode && 'children' in vDom) {
-      const length = Math.max(vNode.children?.length ?? 0, vDom.children?.length ?? 0);
-      const children: Array<T | null> = [];
-      for (let i = 0; i < length; i += 1) {
-        const v = vNode.children?.[i];
-        const t = vDom.children?.[i];
-        if (v && t) {
-          children[i] = this.process(t as T, v, callback);
-        } else if (v) {
-          children[i] = callback({
-            type: 'add',
-            vNode: v,
-          });
-        } else if (t) {
-          callback({
+  }
+  private patchVNode() {}
+  private process(vDom: T | null, vNode: VNodeType | null) {
+    if (vDom && vNode) {
+      if (vDom.type === 'component' && vNode.type === 'component') {
+        //
+      } else if (vDom.type === 'text' && vNode.type === 'text') {
+        this.results.push({
+          type: 'update',
+          vDom: vNode as T,
+        });
+      } else if (vDom.type === 'element' && vNode.type === 'element') {
+        if (vDom.tagName !== vNode.tagName) {
+          this.results.push({
             type: 'remove',
             vDom,
+          }, {
+            type: 'add',
+            vDom: vNode as T,
           });
-          children[i] = null;
         }
       }
-      vDom.children = children.filter(Boolean) as T[];
+      let length = 0;
+      if ('children' in vNode) {
+        length = Math.max(vNode.children?.length ?? 0, length);
+      }
+      if ('children' in vDom) {
+        length = Math.max(vDom.children?.length ?? 0, length);
+      }
+      for (let i = 0; i < length; i += 1){
+        this.process((vDom as any).children?.[i], (vNode as any).children?.[i]);
+      }
+    } else if (vDom) {
+      this.results.push({
+        type: 'remove',
+        vDom,
+      });
+    } else if (vNode) {
+      this.results.push({
+        type: 'add',
+        vDom: vNode as T,
+      });
     }
-    this.chains.splice(0, this.chains.length);
-    return vDom;
+  }
+  public compare() {
+    this.process(this.vDom, this.vNode);
+    return this.results;
   }
 }
 
