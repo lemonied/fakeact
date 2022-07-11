@@ -34,3 +34,32 @@ export function buildDomNode(vNode: VNodeType, parentNode: Node): DomNodeType {
   }
   return domNode;
 }
+
+export function rebuildDomNode(vDom: DomNodeType | null, vNode: VNodeType | null) {
+  if (vDom && vNode) {
+    //
+  } else if (vDom) {
+    removeAllNode(vDom);
+  } else if (vNode) {
+    //
+  }
+}
+
+export function removeAllNode(vNode: DomNodeType) {
+  if ('node' in vNode) {
+    vNode.node.parentNode?.removeChild(vNode.node);
+  } else if ('children' in vNode) {
+    vNode.children?.forEach(v => removeAllNode(v));
+  }
+}
+
+export function insertAfter(oldNode: Node, newNode: Node) {
+  const parent = oldNode.parentNode;
+  if (parent) {
+    if (oldNode === parent.lastChild) {
+      return parent.appendChild(newNode);
+    } else {
+      return parent.insertBefore(newNode, oldNode.nextSibling);
+    }
+  }
+}

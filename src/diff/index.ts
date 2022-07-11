@@ -1,75 +1,121 @@
 import {
   VNodeType,
 } from '../vNode';
-import { Attributes } from '../attribute';
-
-export interface Difference<T extends VNodeType> {
-  type: 'remove' | 'update' | 'add';
-  vDom: T;
-}
 
 export class Diff<T extends VNodeType> {
   private readonly vDom: T;
   private readonly vNode: VNodeType;
-  private results: Difference<T>[] = [];
   constructor(vDom: T, vNode: VNodeType) {
     this.vDom = vDom;
     this.vNode = vNode;
   }
-  private execChildren(oldChildren: T[] | null, newChildren: VNodeType[] | null) {
-    if (oldChildren && newChildren) {
-      let newEndIdx = newChildren.length - 1;
+  private patchVNode: (vDom: T | null, vNode: VNodeType | null) => void = () => {
+    throw new Error('Please set function patchVNode');
+  };
+  private static sameVNode(oldVNode: VNodeType, newVNode: VNodeType) {
+    if (oldVNode.type !== newVNode.type) {
+      return false;
     }
+    if (oldVNode.type === 'element' && newVNode.type === 'element') {
+      return oldVNode.tagName === newVNode.tagName && oldVNode.key === newVNode.key;
+    }
+    if (oldVNode.type === 'text' && newVNode.type === 'text') {
+      return oldVNode.text === newVNode.text;
+    }
+    return true;
   }
-  private patchVNode() {}
-  private process(vDom: T | null, vNode: VNodeType | null) {
-    if (vDom && vNode) {
-      if (vDom.type === 'component' && vNode.type === 'component') {
-        //
-      } else if (vDom.type === 'text' && vNode.type === 'text') {
-        this.results.push({
-          type: 'update',
-          vDom: vNode as T,
-        });
-      } else if (vDom.type === 'element' && vNode.type === 'element') {
-        if (vDom.tagName !== vNode.tagName) {
-          this.results.push({
-            type: 'remove',
-            vDom,
-          }, {
-            type: 'add',
-            vDom: vNode as T,
-          });
+  private execChildren(vDom: T | null, vNode: VNodeType | null) {
+    let oldChildren: T[] | null = null;
+    let newChildren: VNodeType[] | null = null;
+    if (vDom && 'children' in vDom) {
+      oldChildren = vDom.children as T[];
+    }
+    if (vNode && 'children' in vNode) {
+      newChildren = vNode.children as VNodeType[];
+    }
+    if (oldChildren && newChildren) {
+      const p = [...oldChildren];
+      const n = [...newChildren];
+      let oldStartIdx = 0;
+      let oldEndIdx = p.length - 1;
+      let newStartIdx = 0;
+      let newEndIdx = n.length - 1;
+      while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+        const oldStartNode = p[oldStartIdx];
+        const oldEndNode = p[oldEndIdx];
+        const newStartNode = n[newStartIdx];
+        const newEndNode = n[newEndIdx];
+        if (Diff.sameVNode(oldStartNode, newStartNode)) {
+          this.patchVNode(oldStartNode, newStartNode);
+          this.execChildren(oldStartNode, newStartNode);
+          oldStartIdx++;
+          newStartIdx++;
+          continue;
+        }
+        if (Diff.sameVNode(oldEndNode, newEndNode)) {
+          this.patchVNode(oldEndNode, newEndNode);
+          this.execChildren(oldEndNode, newEndNode);
+          oldEndIdx--;
+          newEndIdx--;
+          continue;
+        }
+        if (Diff.sameVNode(oldStartNode, newEndNode)) {
+          this.patchVNode(oldStartNode, newEndNode);
+          this.execChildren(oldStartNode, newEndNode);
+          oldStartIdx++;
+          newEndIdx--;
+          continue;
+        }
+        if (Diff.sameVNode(oldEndNode, newStartNode)) {
+          this.patchVNode(oldEndNode, newStartNode);
+          this.patchVNode(oldEndNode, newStartNode);
+          oldEndIdx++;
+          newStartIdx--;
+          continue;
+        }
+        const index = p.findIndex(v => Diff.sameVNode(v, newStartNode));
+        if (index > -1) {
+          const spliced = p.splice(index, 1);
+          p.splice(oldStartIdx, 0, spliced[0]);
+        } else {
+          this.patchVNode(null, n[newStartIdx]);
+          newStartIdx++;
         }
       }
-      let length = 0;
-      if ('children' in vNode) {
-        length = Math.max(vNode.children?.length ?? 0, length);
+      if (oldStartIdx <= oldEndIdx || newStartIdx <= newEndIdx) {
+        if (oldStartIdx <= oldEndIdx) {
+          p.slice(oldStartIdx, oldEndIdx + 1).forEach(v => this.patchVNode(v, null));
+        } else if (newStartIdx <= newEndIdx) {
+          n.slice(newStartIdx, newEndIdx + 1).forEach(v => this.patchVNode(null, v));
+        }
       }
-      if ('children' in vDom) {
-        length = Math.max(vDom.children?.length ?? 0, length);
-      }
-      for (let i = 0; i < length; i += 1){
-        this.process((vDom as any).children?.[i], (vNode as any).children?.[i]);
-      }
-    } else if (vDom) {
-      this.results.push({
-        type: 'remove',
-        vDom,
-      });
-    } else if (vNode) {
-      this.results.push({
-        type: 'add',
-        vDom: vNode as T,
-      });
+    } else if (oldChildren) {
+      oldChildren.forEach(v => this.patchVNode(v, null));
+    } else if (newChildren) {
+      newChildren.forEach(v => this.patchVNode(null, v));
     }
   }
-  public compare() {
-    this.process(this.vDom, this.vNode);
-    return this.results;
+  private process(vDom: T | null, vNode: VNodeType | null) {
+    if (vDom && vNode) {
+      if (Diff.sameVNode(vDom, vNode)) {
+        this.patchVNode(vDom, vNode);
+        this.execChildren(vDom, vNode);
+      } else {
+        this.patchVNode(vDom, null);
+        this.patchVNode(null, vNode);
+        this.execChildren(null, vNode);
+      }
+    } else if (vDom) {
+      this.patchVNode(vDom, null);
+    } else if (vNode) {
+      this.patchVNode(null, vNode);
+    }
   }
-}
-
-export function attributeDiff(prev: Attributes, current: Attributes) {
-
+  public setPatchVNode(callback: Diff<T>['patchVNode']) {
+    this.patchVNode = callback;
+  }
+  public dispatch() {
+    this.process(this.vDom, this.vNode);
+    return this.vNode as T;
+  }
 }

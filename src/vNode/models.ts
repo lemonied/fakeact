@@ -7,6 +7,7 @@ export type NodeName = string | ComponentConstructor | Function | FragmentFuncti
 export type JSXNode = VNodeType | number | boolean | null | undefined | string;
 
 export interface ElementVNodeBase {
+  key?: any;
   type: 'element';
   tagName: string;
   attributes: Attributes;
@@ -23,6 +24,7 @@ export interface FragmentVNode extends FragmentVNodeBase {
 }
 
 export interface ComponentVNodeBase {
+  key?: any;
   type: 'component';
   attributes: Attributes;
   Component: ComponentConstructor;
