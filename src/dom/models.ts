@@ -1,25 +1,15 @@
 import {
-  ComponentVNodeBase,
-  ElementVNodeBase,
-  FragmentVNodeBase,
-  TextVNode,
+  VNode,
 } from '../vNode';
 
-export interface ElementDomNode extends ElementVNodeBase {
-  children?: DomNodeType[];
-  node: HTMLElement;
+export interface DomNodeElement extends HTMLElement {
+  [prop: symbol]: any;
 }
 
-export interface FragmentDomNode extends FragmentVNodeBase {
-  children?: DomNodeType[];
+export interface DomNodeText extends Node {
+  [prop: symbol]: any;
 }
 
-export interface ComponentDomNode extends ComponentVNodeBase {
-  children?: DomNodeType[];
+export interface DomNode extends VNode {
+  node?: DomNodeElement | DomNodeText;
 }
-
-export interface TextDomNode extends TextVNode {
-  node: Node;
-}
-
-export type DomNodeType = ElementDomNode | FragmentDomNode | ComponentDomNode | TextDomNode;

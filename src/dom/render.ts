@@ -1,20 +1,21 @@
-import { buildVNode, VNodeType } from '../vNode';
+import { buildVNode, VNode } from '../vNode';
 import { buildDomNode, rebuildDomNode } from './';
 import { Diff } from '../diff';
-import { DomNodeType } from './models';
+import { DomNode } from './models';
 
 export class Root {
   private readonly ele: HTMLElement;
-  private domNode: DomNodeType | null = null;
+  private domNode: DomNode | null = null;
   constructor(ele: HTMLElement) {
     this.ele = ele;
   }
-  render(vNode: VNodeType) {
+  render(vNode: VNode) {
     const tree = buildVNode(vNode);
     if (!this.domNode) {
       this.domNode = buildDomNode(tree, this.ele);
     } else {
       const diff = new Diff(this.domNode, tree);
+      rebuildDomNode.sign = Symbol('diff');
       diff.setPatchVNode(rebuildDomNode);
       this.domNode = diff.dispatch();
     }
